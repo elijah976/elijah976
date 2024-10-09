@@ -1,6 +1,11 @@
 th { 
   border-bottom: 1px solid gray;
 }
+
 td {
   text-align: center;
+}
+
+td.left {
+  text-align: left;
 }
