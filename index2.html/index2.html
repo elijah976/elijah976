@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pitch Stats</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 20px;
+    }
+    h1.red {
+      color: #BD1F2D;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid gray;
+    }
+    th {
+      cursor: pointer;
+      background-color: #e0e0e0;
+    }
+    th.sorted-asc {
+      background-color: #c8e6c9;
+    }
+    th.sorted-desc {
+      background-color: #ffcdd2;
+    }
+    .blue {
+      color: #0C2340;
+    }
+    a {
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <a href="answers.html">My Answers</a>
+  <h1 class="red">Trackman Pitch Stats Viewer</h1>
+
+  <form onsubmit="filterData(event);">
+    <label>Starting Date</label>
+    <input type="date" id="startdate" />
+    <label>Ending Date</label>
+    <input type="date" id="enddate" />
+    <button type="submit">Filter</button>
+  </form>
+
+  <table class="blue" id="pitchTable">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">PitchNo</th>
+        <th onclick="sortTable(1)">Date</th>
+        <th onclick="sortTable(2)">Time</th>
+        <th onclick="sortTable(3)">Batter</th>
+        <th onclick="sortTable(4)">Balls</th>
+        <th onclick="sortTable(5)">Strikes</th>
+        <th onclick="sortTable(6)">Outs</th>
+        <th onclick="sortTable(7)">PitchCall</th>
+        <th onclick="sortTable(8)">KorBB</th>
+        <th onclick="sortTable(9)">RelSpeed</th>
+        <th onclick="sortTable(10)">SpinRate</th>
+        <th onclick="sortTable(11)">SpinAxis</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data will be populated here -->
+    </tbody>
+  </table>
+
+  <script>
+    async function fetchData() {
+      const url = 'https://compute.samford.edu/zohauth/clients/datajson/1';
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        populateTable(data);
+      } catch (error) {
+        console.error('Fetch error:', error);
+      }
+    }
+
+    function populateTable(data) {
+      const tableBody = document.querySelector('#pitchTable tbody');
+      tableBody.innerHTML = ''; // Clear existing rows
+
+      data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><a href="details.html?id=${item.PitchNo}">Pitch ${item.PitchNo}</a></td>
+          <td>${item.Date}</td>
+          <td>${item.Time}</td>
+          <td>${item.Batter}</td>
+          <td>${item.Balls}</td>
+          <td>${item.Strikes}</td>
+          <td>${item.Outs}</td>
+          <td>${item.PitchCall}</td>
+          <td>${item.KorBB || ''}</td>
+          <td>${item.RelSpeed || ''}</td>
+          <td>${item.SpinRate || ''}</td>
+          <td>${item.SpinAxis || ''}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function filterData(event) {
+      event.preventDefault();
+      const startdate = new Date(document.getElementById("startdate").value);
+      const enddate = new Date(document.getElementById("enddate").value);
+      enddate.setHours(23, 59, 59, 999);
+
+      const rows = document.querySelectorAll("#pitchTable tbody tr");
+      rows.forEach(row => {
+        const rowDate = new Date(row.cells[1].textContent);
+        row.style.display = (rowDate >= startdate && rowDate <= enddate) ? "" : "none";
+      });
+    }
+
+    let currentSortColumn = -1;
+    let ascending = true;
+
+    function sortTable(columnIndex) {
+      const table = document.getElementById("pitchTable");
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.rows);
+
+      if (currentSortColumn === columnIndex) {
+        ascending = !ascending;
+      } else {
+        ascending = true;
+        currentSortColumn = columnIndex;
+      }
+
+      rows.sort((a, b) => {
+        const aText = a.cells[columnIndex].textContent;
+        const bText = b.cells[columnIndex].textContent;
+        return isNaN(aText) ? aText.localeCompare(bText) : aText - bText;
+      });
+
+      if (!ascending) rows.reverse();
+      tbody.append(...rows);
+      updateHeaderStyles(columnIndex);
+    }
+
+    function updateHeaderStyles(sortedColumnIndex) {
+      const headers = document.querySelectorAll("th");
+      headers.forEach((th, index) => {
+        th.classList.remove("sorted-asc", "sorted-desc");
+        if (index === sortedColumnIndex) {
+          th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+        }
+      });
+    }
+
+    window.onload = fetchData;
+  </script>
+</body>
+</html>
